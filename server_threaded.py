@@ -101,10 +101,11 @@ def serve_connection(connection,port):
                 break
                 exit()
             else:
-                print(data)
                 if port == 6101:
                     response=esp32.process_data(data)
                     if response:
+                        print("Response to device from server")
+                        print(response)
                         connection.send(response)
                 elif port == 6102:
                     response=bceparser.parsed_data(data.hex())

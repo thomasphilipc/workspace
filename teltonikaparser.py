@@ -1,4 +1,6 @@
 import datetime
+import binascii
+import numpy as np
 
 
 from time import gmtime,strftime
@@ -33,6 +35,63 @@ def teltonika(data):
     print(parsed)
     return parsed
 
+def codec_12(data):
+    print("Preparing data for gprs forward commands")
+    print("Data to send is  {}".format(data))
+    # convert from string to hex
+    hexcommand=binascii.hexlify(data.encode())
+    print(" data in hex is {}".format(hexcommand))
+    command = "{:08x}".format(0)
+
+    datasize = "00000000"
+    testcommand = b"0c0105000000127365746469676f7574203130203320330D0A01"
+    fixedbyte = b"0c"
+    onecommand = b"01"
+    eocommand = b"0D0A"
+    response = b"06"
+    request = b"05"
+    int_lenghtofcommnad=int((len(hexcommand)/2)+2)
+    lengthofcommand = "{:08x}".format(int_lenghtofcommnad)
+    int_totallength=int_lenghtofcommnad+8
+    totallength = "{:08x}".format(int_totallength)
+    codec12_data = bytearray(b"")
+    codec12_data+=(command).encode()
+    codec12_data+=(totallength).encode()
+    codec12_data+=fixedbyte
+    codec12_data+= onecommand
+    codec12_data+= request
+    codec12_data+=lengthofcommand.encode()
+    codec12_data+=(hexcommand)
+    codec12_data+=(eocommand)
+    codec12_data+= onecommand
+
+
+    print(codec12_data)
+
+
+
+def crc16(data: bytes, poly=0xA001):
+    '''
+    CRC-16-CCITT Algorithm
+    '''
+    data = bytearray(data)
+    crc = 0x0
+
+    for b in data:
+
+        cur_byte = 0xFF & b
+        for _ in range(0, 8):
+            if (crc & 0x0001) ^ (cur_byte & 0x0001):
+                crc = (crc >> 1) ^ poly
+            else:
+                crc >>= 1
+            cur_byte >>= 1
+    crc = (~crc & 0xFFFF)
+    crc = (crc << 8) | ((crc >> 8) & 0xFF)
+
+    return crc & 0xFFFF
+
+    return np.uint16(crc)
 
 def process_data(data):
 
@@ -118,7 +177,7 @@ def process_data(data):
                     line=( " the {} id is {}/{} with value {}".format(i,value1,paramdict.get(value1),value))
                     parsed.append(line)
                 else:
-                    line=( " the {} id is {} with value {}".format(i,value1,value))
+                    line = (" the {} id is {} with value {}".format(i,value1,value))
                     parsed.append(line)
 
             data,value=parse_string(data,2,"4Byte element count")
@@ -162,10 +221,16 @@ def process_data(data):
 
         return parsed
 
-
     else:
         return 0
 
 if __name__ == '__main__':
     # print_a() is only executed when the module is run directly.
-    teltonika("0801000000F9CEBAFA6801000000000000000000000000000000F00D08EF00F00115004502010002000300B40005B60000180000430000090088060083000001")
+    teltonika("0600000026444F5554313A312054696D656F75743A337320444F5554323A302054696D656F75743A337320")
+    #codec_12("setdigout 11")
+    codec_12("setdigout 10 3 3")
+    print(hex(crc16(b"0c0105000000127365746469676f7574203130203320330D0A01")))
+
+##00000000000000180c0105000000107365746469676f757420313020332033010000E96C
+##00000000000000160C01050000000E7365746469676F75742031310D0A010000E258
+##000000000000001a0c0105000000127365746469676f7574203130203320330D0A0100004fbd

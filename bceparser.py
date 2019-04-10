@@ -79,6 +79,7 @@ def convert(s):
 # output :  reversed value (string)
 def reorder_hexstring(value):
     result= value.encode('utf-8')
+
     resultnew=[]
     for i in range(0,len(result),2):
         resultnew.append(result[-2:].decode('utf-8'))
@@ -143,7 +144,7 @@ def parse_string(data,lengthinbytes,content):
         val=available_data
     #data cordinates is a combination of events
     elif content == 'data_coord':
-        print(result)
+
         coord=[]
         lon =convert(reorder_hexstring(result[:8]))
         coord.append(lon)
@@ -205,8 +206,7 @@ def parsed_data(data):
     parsed=process_data(data)
     #calling function to build the ack response
     ack=process_ack(data)
-    print(parsed)
-    print(ack)
+
     return parsed
 
 def process_ack(data):
@@ -255,6 +255,7 @@ def process_data(data):
     result.append(val)
     # service key
     data,val,content=parse_string(data,1,'serviceid')
+
     result.append(val)
     #confirmation key A
 
@@ -264,13 +265,14 @@ def process_data(data):
     # here you need to build a function that will keep processing the structure length
     #structure length
     # while there is not more than two remaining bytes then proceed
-    while (proceed):
+    while (proceed and (len(data)>2)):
+        #print("Going to process : {}".format(data))
         structure = []
-        print(data)
+
         data,val,content=parse_string(data,1,'structurelength')
         structure.append(val)
         data_length=val
-        print(data_length)
+
         #date time
         data,val,content=parse_string(data,4,'data_time')
         structure.append(val)
@@ -454,8 +456,11 @@ def process_data(data):
                         data,val,content=parse_string(data,66,'total_fuel_used')
                         structure.append(val)
         result.append(structure)
-        print("length of reamining data is {}".format(len(data)))
-        if len(data)<20:
+        #print(" Length of data remaining is {} :{}".format(len(data),data))
+        if (len(data)>1 and len(data)<40):
+            #print("ignored and removed {}".format(data[:-2]))
+            data=data[-2:]
+            #print(data)
             proceed= False
 
 
@@ -463,7 +468,8 @@ def process_data(data):
     data,val,content=parse_string(data,1,'checksum')
     result.append(val)
 
+    #print(result)
     return result
 
 if __name__ == '__main__':
-    parsed_data("4c79e971581403007501a50f2c979e34a68bc000800080000005a75c42e3c9c841001a01feff00000000a0809801530da801027510f96600472ce79e34a68bc000800080000005a75c42e3c9c841002a01feff00000000a0809801610da801027510f96600472c379f34a68bc000800080000005a75c42e3c9c841002901feff00000000a1809001510da801027510f96600472c579f34a68bc000800080000005a75c42e3c9c841002901feff00000000a0809801600da801027510f96600472ca79f34a68bc000800080000005a75c42e3c9c841002901feff00000000a0809801600d0000000000000000002cf79f34a68bc000800080000005a75c42e3c9c841002901feff00000000a08098015c0d0000000000000000001bf77335a68ac0008000800000e08091376b0da801027510f96600431b477435a68ac0008000800000e080a237790da801027510f96600432c277635a68bc000800080000004a75c4223cac841002787000000000000e0809a37830da801027510f966004303")
+    parsed_data("4c79e971581403002601a5021b0710eca58ac0008000800000c180b5380600a801027510863000481b3710eca58ac0008000800000c08089380600a801027510863000482ce710eca58bc000800080000008a75c4211cac841001863000000000000c1a080380600a801027510863000482c0711eca58bc000800080000008a75c4211cac841001863000000000000c080b5380600a801027510863000482cd75aeca58bc000800080000008a75c4211cac841001863000000000000c0809b380600a801027510f96600441be75aeca58ac0008000800000c18077380400a801027510f96600441b075beca58ac0008000800000c08080380600a801027510f96600442ca75ceca58bc000800080000008a75c4211cac841002763000000000000c18077380600a801027510f9660044e9")
